@@ -69,7 +69,7 @@ class ModbusDataCollector2000Delux:
             data[k] = self.invSun2000.read(s)
 
         state1 = self.invSun2000.read(registers.InverterEquipmentRegister.State1)
-        state1_string = ";".join([val for key, val in state1Readable.items() if int(state1)&key>0])
+        state1_string = ";".join([val for key, val in state1Readable.items() if (int(state1) & key) > 0])
         data['/Status'] = state1_string
 
         # data['/Ac/StatusCode'] = statuscode
