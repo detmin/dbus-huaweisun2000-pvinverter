@@ -70,7 +70,6 @@ class DbusSun2000Service:
         self._dbusservice.add_path('/Ac/Phase', 1)  # Connected to L1
         self._dbusservice.add_path('/PhaseConfig', 1)  # Single phase configuration
         self._dbusservice.add_path('/SwitchPos', 0)  # No switch position (grid-tied)
-        self._dbusservice.add_path('/Role', 'pvinverter')  # Device role
 
         for _path, _settings in paths.items():
             self._dbusservice.add_path(
