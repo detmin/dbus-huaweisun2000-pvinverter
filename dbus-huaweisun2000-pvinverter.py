@@ -73,12 +73,14 @@ class DbusSun2000Service:
         GLib.timeout_add(settings.get('update_time_ms'), self._update)  # pause in ms before the next request
 
     def _update(self):
-        with self._dbusservice as s:
+        try:
+            # Get inverter data OUTSIDE the DBus lock to avoid blocking DBus for several seconds
+            # This prevents timeouts when grid meter service or GUI tries to read from this service
+            meter_data = self._data_connector.getData()
+            grid_meter_data = self._data_connector.getMeterData()
 
-            try:
-                # Get inverter data
-                meter_data = self._data_connector.getData()
-
+            # Now quickly update DBus with minimal locking
+            with self._dbusservice as s:
                 if meter_data is not None:
                     for k, v in meter_data.items():
                         logging.info(f"set {k} to {v}")
@@ -87,7 +89,6 @@ class DbusSun2000Service:
                     logging.warning("No inverter data available (connection error)")
 
                 # Get smart meter data (grid import/export) if available
-                grid_meter_data = self._data_connector.getMeterData()
                 if grid_meter_data is not None:
                     # Debug: log all power values from getMeterData()
                     logging.debug(f"getMeterData() returned {len(grid_meter_data)} items")
@@ -127,8 +128,8 @@ class DbusSun2000Service:
                 # update lastupdate vars
                 self._lastUpdate = time.time()
 
-            except Exception as e:
-                logging.critical('Error at %s', '_update', exc_info=e)
+        except Exception as e:
+            logging.critical('Error at %s', '_update', exc_info=e)
 
         return True
 
