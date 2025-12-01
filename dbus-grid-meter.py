@@ -63,6 +63,12 @@ class DbusGridMeterService:
         self._dbusservice.add_path('/Ac/NumberOfPhases', 1)  # Single phase (L1 only has valid data)
         self._dbusservice.add_path('/Ac/NumberOfAcInputs', 1)
 
+        # Additional paths expected by Venus OS GUI
+        self._dbusservice.add_path('/AllowedRoles', ['grid'])
+        self._dbusservice.add_path('/PhaseSequence', 0)  # 0 = L1-L2-L3
+        self._dbusservice.add_path('/StatusCode', 0)  # 0 = OK
+        self._dbusservice.add_path('/NrOfPhases', 1)  # Single phase
+
         # formatting
         _kwh = lambda p, v: (str(round(v, 2)) + ' kWh')
         _a = lambda p, v: (str(round(v, 1)) + ' A')
