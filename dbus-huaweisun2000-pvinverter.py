@@ -62,6 +62,13 @@ class DbusSun2000Service:
         self._dbusservice.add_path('/UpdateIndex', 0)
         self._dbusservice.add_path('/StatusCode', 7)
 
+        # Additional paths expected by Venus OS GUI
+        self._dbusservice.add_path('/AllowedRoles', ['pvinverter'])
+        self._dbusservice.add_path('/PhaseSequence', 0)  # 0 = L1-L2-L3
+        self._dbusservice.add_path('/NrOfPhases', 1)  # Single phase
+        self._dbusservice.add_path('/Ac/PowerLimit', None)  # No power limit set
+        self._dbusservice.add_path('/Ac/Phase', 1)  # Connected to L1
+
         for _path, _settings in paths.items():
             self._dbusservice.add_path(
                 _path, _settings['initial'], gettextcallback=_settings.get('textformat', lambda p,v:v), writeable=True,
