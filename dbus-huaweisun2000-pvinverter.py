@@ -29,7 +29,7 @@ from vedbus import VeDbusService
 class DbusSun2000Service:
     def __init__(self, servicename, settings, paths, data_connector, serialnumber='X',
                  productname='Huawei Sun2000 PV-Inverter'):
-        self._dbusservice = VeDbusService(servicename)
+        self._dbusservice = VeDbusService(servicename, register=False)
         # self._paths = paths
         self._data_connector = data_connector
 
@@ -66,6 +66,9 @@ class DbusSun2000Service:
                 _path, _settings['initial'], gettextcallback=_settings.get('textformat', lambda p,v:v), writeable=True,
                 onchangecallback=self._handlechangedvalue)
 
+        # Register the service after all paths are added
+        self._dbusservice.register()
+
         GLib.timeout_add(settings.get('update_time_ms'), self._update)  # pause in ms before the next request
 
     def _update(self):
@@ -75,16 +78,47 @@ class DbusSun2000Service:
                 # Get inverter data
                 meter_data = self._data_connector.getData()
 
-                for k, v in meter_data.items():
-                    logging.info(f"set {k} to {v}")
-                    s[k] = v
+                if meter_data is not None:
+                    for k, v in meter_data.items():
+                        logging.info(f"set {k} to {v}")
+                        s[k] = v
+                else:
+                    logging.warning("No inverter data available (connection error)")
 
                 # Get smart meter data (grid import/export) if available
                 grid_meter_data = self._data_connector.getMeterData()
                 if grid_meter_data is not None:
+                    # Debug: log all power values from getMeterData()
+                    logging.debug(f"getMeterData() returned {len(grid_meter_data)} items")
+                    for k in sorted(grid_meter_data.keys()):
+                        if 'Power' in k:
+                            logging.debug(f"  getMeterData()['{k}'] = {grid_meter_data[k]}")
+
                     for k, v in grid_meter_data.items():
-                        logging.info(f"set {k} to {v}")
-                        s[k] = v
+                        # Skip None values and invalid INT32_MAX values
+                        # INT32_MAX can appear as 2147483647, 214748364.7, 21474836.47, etc. (scaled)
+                        # Also validate reasonable ranges for each measurement type
+                        skip = False
+                        if v is None:
+                            skip = True
+                            if 'Power' in k:
+                                logging.info(f"Skipping None power value for {k}")
+                        elif abs(v) >= 2147483647 or abs(v) >= 214748364:  # Catch INT32_MAX and scaled versions
+                            skip = True
+                            logging.debug(f"Skipping INT32_MAX value for {k}: {v}")
+                        elif 'Voltage' in k and abs(v) > 1000:  # Voltage should be < 1000V
+                            skip = True
+                            logging.debug(f"Skipping invalid voltage for {k}: {v}")
+                        elif 'Current' in k and abs(v) > 10000:  # Current should be < 10000A
+                            skip = True
+                            logging.debug(f"Skipping invalid current for {k}: {v}")
+                        elif 'Power' in k and abs(v) > 1000000:  # Power should be < 1MW
+                            skip = True
+                            logging.debug(f"Skipping invalid power for {k}: {v}")
+
+                        if not skip:
+                            logging.info(f"set {k} to {v}")
+                            s[k] = v
 
                 # increment UpdateIndex - to show that new data is available (and wrap)
                 s['/UpdateIndex'] = (s['/UpdateIndex'] + 1) % 256
@@ -100,6 +134,7 @@ class DbusSun2000Service:
     def _handlechangedvalue(self, path, value):
         logging.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
+
 
 def exit_mainloop(mainloop):
     mainloop.quit()
@@ -158,7 +193,7 @@ def main():
         _w = lambda p, v: (str(round(v, 1)) + ' W')
         _v = lambda p, v: (str(round(v, 1)) + ' V')
         _hz = lambda p, v: f"{v:.4f}Hz"
-        _n = lambda p, v: f"{v:i}"
+        _n = lambda p, v: str(int(v))  # Integer format
 
 
         dbuspath = {
