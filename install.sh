@@ -10,13 +10,33 @@ chmod 744 $SCRIPT_DIR/restart.sh
 chmod a+x $SCRIPT_DIR/uninstall.sh
 chmod 744 $SCRIPT_DIR/uninstall.sh
 
+chmod a+x $SCRIPT_DIR/dbus-huaweisun2000-pvinverter.py
+chmod a+x $SCRIPT_DIR/dbus-grid-meter.py
+chmod a+x $SCRIPT_DIR/dbus-consumption-calculator.py
+
+# Set permissions for all service scripts
 chmod a+x $SCRIPT_DIR/service/run
 chmod 755 $SCRIPT_DIR/service/run
-
 chmod a+x $SCRIPT_DIR/service/log/run
 
-# create sym-link to run script in deamon
+chmod a+x $SCRIPT_DIR/service/dbus-huaweisun2000-grid/run
+chmod 755 $SCRIPT_DIR/service/dbus-huaweisun2000-grid/run
+chmod a+x $SCRIPT_DIR/service/dbus-huaweisun2000-grid/log/run
+
+chmod a+x $SCRIPT_DIR/service/dbus-consumption-calculator/run
+chmod 755 $SCRIPT_DIR/service/dbus-consumption-calculator/run
+chmod a+x $SCRIPT_DIR/service/dbus-consumption-calculator/log/run
+
+# create sym-links to run scripts in daemon
+echo "Installing services..."
 ln -sfn $SCRIPT_DIR/service /service/$SERVICE_NAME
+echo "✓ PV inverter service installed"
+
+ln -sfn $SCRIPT_DIR/service/dbus-huaweisun2000-grid /service/dbus-huaweisun2000-grid
+echo "✓ Grid meter service installed"
+
+ln -sfn $SCRIPT_DIR/service/dbus-consumption-calculator /service/dbus-consumption-calculator
+echo "✓ Consumption calculator service installed"
 
 # add install-script to rc.local to be ready for firmware update
 filename=/data/rc.local
