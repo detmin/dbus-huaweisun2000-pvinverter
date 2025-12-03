@@ -1,5 +1,47 @@
 #!/bin/bash
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-echo "SCRIPT_DIR: $SCRIPT_DIR"
 
-kill $(pgrep -f "python -u $SCRIPT_DIR/dbus-huaweisun2000-pvinverter.py")
+echo "==================================================================="
+echo "Restarting Huawei SUN2000 Services"
+echo "==================================================================="
+
+# Kill processes if they exist
+echo "Stopping services..."
+pkill -f "dbus-huaweisun2000-pvinverter.py" 2>/dev/null && echo "✓ Killed PV inverter process"
+pkill -f "dbus-grid-meter.py" 2>/dev/null && echo "✓ Killed grid meter process"
+pkill -f "dbus-consumption-calculator.py" 2>/dev/null && echo "✓ Killed consumption calculator process"
+sleep 2
+
+# Check if managed by service manager
+if [ -d "/service/dbus-huaweisun2000-pvinverter" ]; then
+    echo "Services managed by daemontools - restarting via svc..."
+    svc -t /service/dbus-huaweisun2000-pvinverter 2>/dev/null
+    svc -t /service/dbus-huaweisun2000-grid 2>/dev/null
+    svc -t /service/dbus-consumption-calculator 2>/dev/null
+    sleep 2
+    echo "✓ Services restarted by service manager"
+else
+    echo "⚠ Services not managed - they should auto-restart via daemontools"
+fi
+
+# Verify services are running
+sleep 3
+echo ""
+echo "Checking service status..."
+if pgrep -f "dbus-huaweisun2000-pvinverter.py" > /dev/null; then
+    echo "✓ PV inverter service is running (PID: $(pgrep -f 'dbus-huaweisun2000-pvinverter.py' | head -1))"
+else
+    echo "✗ PV inverter service NOT running"
+fi
+
+if pgrep -f "dbus-grid-meter.py" > /dev/null; then
+    echo "✓ Grid meter service is running (PID: $(pgrep -f 'dbus-grid-meter.py' | head -1))"
+else
+    echo "⚠ Grid meter service NOT running (OK if no meter connected)"
+fi
+
+if pgrep -f "dbus-consumption-calculator.py" > /dev/null; then
+    echo "✓ Consumption calculator is running (PID: $(pgrep -f 'dbus-consumption-calculator.py' | head -1))"
+else
+    echo "⚠ Consumption calculator NOT running"
+fi
