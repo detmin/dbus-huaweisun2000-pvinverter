@@ -98,15 +98,22 @@ class ConsumptionCalculator:
 
             # Calculate consumption
             # Grid meter measures NET power from grid (after PV contribution)
-            # Sign convention: negative = import, positive = export
-            # Consumption = |Grid Import| + PV Production
-            # If grid is negative (importing): consumption = -grid + pv
-            # If grid is positive (exporting): consumption = pv - grid (but this means pv > consumption)
+            # Venus OS sign convention for grid meters:
+            #   POSITIVE (+) = Import from grid (power flowing TO home)
+            #   NEGATIVE (-) = Export to grid (power flowing FROM home)
+            #
+            # Consumption calculation:
+            #   When importing (grid > 0): Consumption = Grid + PV
+            #   When exporting (grid < 0): Consumption = PV + Grid (grid is negative, so this subtracts)
+            #   Formula simplifies to: Consumption = Grid + PV (always!)
+            #
+            # Example 1 (importing): Grid=+2300W, PV=+2400W → Consumption=4700W ✓
+            # Example 2 (exporting): Grid=-500W, PV=+3000W → Consumption=2500W ✓
 
-            consumption_total = abs(grid_power) + pv_power if grid_power < 0 else pv_power - grid_power
-            consumption_l1 = abs(grid_l1_power) + pv_l1_power if grid_l1_power < 0 else pv_l1_power - grid_l1_power
+            consumption_total = grid_power + pv_power
+            consumption_l1 = grid_l1_power + pv_l1_power
 
-            # Ensure consumption is never negative
+            # Ensure consumption is never negative (shouldn't happen, but safety check)
             consumption_total = max(0, consumption_total)
             consumption_l1 = max(0, consumption_l1)
 
