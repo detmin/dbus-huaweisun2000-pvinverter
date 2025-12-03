@@ -70,18 +70,19 @@ class DbusSun2000Service:
         GLib.timeout_add(settings.get('update_time_ms'), self._update)  # pause in ms before the next request
 
     def _update(self):
-        with self._dbusservice as s:
+        try:
+            # Get inverter data OUTSIDE the DBus lock to prevent blocking
+            meter_data = self._data_connector.getData()
 
-            try:
-                # Get inverter data
-                meter_data = self._data_connector.getData()
+            # Get smart meter data (grid import/export) if available
+            grid_meter_data = self._data_connector.getMeterData()
 
+            # Now update DBus with the collected data
+            with self._dbusservice as s:
                 for k, v in meter_data.items():
                     logging.info(f"set {k} to {v}")
                     s[k] = v
 
-                # Get smart meter data (grid import/export) if available
-                grid_meter_data = self._data_connector.getMeterData()
                 if grid_meter_data is not None:
                     for k, v in grid_meter_data.items():
                         logging.info(f"set {k} to {v}")
@@ -90,11 +91,11 @@ class DbusSun2000Service:
                 # increment UpdateIndex - to show that new data is available (and wrap)
                 s['/UpdateIndex'] = (s['/UpdateIndex'] + 1) % 256
 
-                # update lastupdate vars
-                self._lastUpdate = time.time()
+            # update lastupdate vars
+            self._lastUpdate = time.time()
 
-            except Exception as e:
-                logging.critical('Error at %s', '_update', exc_info=e)
+        except Exception as e:
+            logging.critical('Error at %s', '_update', exc_info=e)
 
         return True
 
@@ -159,7 +160,7 @@ def main():
         _w = lambda p, v: (str(round(v, 1)) + ' W')
         _v = lambda p, v: (str(round(v, 1)) + ' V')
         _hz = lambda p, v: f"{v:.4f}Hz"
-        _n = lambda p, v: f"{v:i}"
+        _n = lambda p, v: str(int(v))
 
 
         dbuspath = {
