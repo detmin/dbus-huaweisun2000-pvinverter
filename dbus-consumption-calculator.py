@@ -98,22 +98,27 @@ class ConsumptionCalculator:
 
             # Calculate consumption
             # Grid meter measures NET power from grid (after PV contribution)
-            # Venus OS sign convention for grid meters:
-            #   POSITIVE (+) = Import from grid (power flowing TO home)
-            #   NEGATIVE (-) = Export to grid (power flowing FROM home)
+            # Huawei meter sign convention (used by this grid meter service):
+            #   NEGATIVE (-) = Import FROM grid (consuming, grid feeds home)
+            #   POSITIVE (+) = Export TO grid (producing, home feeds grid)
             #
             # Consumption calculation:
-            #   When importing (grid > 0): Consumption = Grid + PV
-            #   When exporting (grid < 0): Consumption = PV + Grid (grid is negative, so this subtracts)
-            #   Formula simplifies to: Consumption = Grid + PV (always!)
+            #   When IMPORTING (grid < 0): Consumption = |Grid Import| + PV Production
+            #     Example: Grid=-2300W (importing), PV=+400W → Consumption=2300+400=2700W
             #
-            # Example 1 (importing): Grid=+2300W, PV=+2400W → Consumption=4700W ✓
-            # Example 2 (exporting): Grid=-500W, PV=+3000W → Consumption=2500W ✓
+            #   When EXPORTING (grid > 0): Consumption = PV Production - Grid Export
+            #     Example: Grid=+1715W (exporting), PV=+2417W → Consumption=2417-1715=702W
+            #
+            # Note: This is opposite of standard Venus OS convention, but matches Huawei meter behavior
 
-            consumption_total = grid_power + pv_power
-            consumption_l1 = grid_l1_power + pv_l1_power
+            if grid_power < 0:  # Importing from grid (negative value)
+                consumption_total = abs(grid_power) + pv_power
+                consumption_l1 = abs(grid_l1_power) + pv_l1_power
+            else:  # Exporting to grid (positive value)
+                consumption_total = pv_power - grid_power
+                consumption_l1 = pv_l1_power - grid_l1_power
 
-            # Ensure consumption is never negative (shouldn't happen, but safety check)
+            # Ensure consumption is never negative (safety check)
             consumption_total = max(0, consumption_total)
             consumption_l1 = max(0, consumption_l1)
 
