@@ -29,19 +29,19 @@ sleep 3
 echo ""
 echo "Checking service status..."
 if pgrep -f "dbus-huaweisun2000-pvinverter.py" > /dev/null; then
-    echo "✓ PV inverter service is running (PID: $(pgrep -f 'dbus-huaweisun2000-pvinverter.py' | head -1))"
+    echo "✓ PV inverter service is running (PID: $(pgrep -f 'dbus-huaweisun2000-pvinverter.py' | head -n 1))"
 else
     echo "✗ PV inverter service NOT running"
 fi
 
 if pgrep -f "dbus-grid-meter.py" > /dev/null; then
-    echo "✓ Grid meter service is running (PID: $(pgrep -f 'dbus-grid-meter.py' | head -1))"
+    echo "✓ Grid meter service is running (PID: $(pgrep -f 'dbus-grid-meter.py' | head -n 1))"
 else
     echo "⚠ Grid meter service NOT running (OK if no meter connected)"
 fi
 
 if pgrep -f "dbus-consumption-calculator.py" > /dev/null; then
-    echo "✓ Consumption calculator is running (PID: $(pgrep -f 'dbus-consumption-calculator.py' | head -1))"
+    echo "✓ Consumption calculator is running (PID: $(pgrep -f 'dbus-consumption-calculator.py' | head -n 1))"
 else
     echo "⚠ Consumption calculator NOT running"
 fi
