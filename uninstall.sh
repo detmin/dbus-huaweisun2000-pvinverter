@@ -44,11 +44,30 @@ if [ -f "$guiv2SettingsFile" ]; then
     rm -f /opt/victronenergy/gui-v2/pages/settings/PageSettingsHuaweiSUN2000.qml
 fi
 
+# Stop and remove all three services
+echo "Stopping services..."
+svc -d /service/$SERVICE_NAME 2>/dev/null
+svc -d /service/dbus-huaweisun2000-grid 2>/dev/null
+svc -d /service/dbus-consumption-calculator 2>/dev/null
+sleep 2
+
 # Remove main pvinverter service
-rm /service/$SERVICE_NAME
-kill $(pgrep -f 'supervise dbus-huaweisun2000-pvinverter')
+echo "Removing main PV inverter service..."
+rm -f /service/$SERVICE_NAME
+kill $(pgrep -f 'supervise dbus-huaweisun2000-pvinverter') 2>/dev/null
 chmod a-x $SCRIPT_DIR/service/run
-$SCRIPT_DIR/restart.sh
+
+# Remove grid meter service
+echo "Removing grid meter service..."
+rm -f /service/dbus-huaweisun2000-grid
+kill $(pgrep -f 'supervise dbus-huaweisun2000-grid') 2>/dev/null
+chmod a-x $SCRIPT_DIR/service/dbus-huaweisun2000-grid/run 2>/dev/null
+
+# Remove consumption calculator service
+echo "Removing consumption calculator service..."
+rm -f /service/dbus-consumption-calculator
+kill $(pgrep -f 'supervise dbus-consumption-calculator') 2>/dev/null
+chmod a-x $SCRIPT_DIR/service/dbus-consumption-calculator/run 2>/dev/null
 
 # Remove old grid meter service if it exists (from previous versions)
 if [ -L "/service/dbus-grid-meter" ]; then
@@ -58,10 +77,6 @@ if [ -L "/service/dbus-grid-meter" ]; then
     rm -f /service/dbus-grid-meter
     kill $(pgrep -f 'supervise dbus-grid-meter') 2>/dev/null
 fi
-
-# Remove old grid meter files if they exist
-rm -f $SCRIPT_DIR/dbus-grid-meter.py
-rm -rf $SCRIPT_DIR/grid-service
 
 # Remove from startup
 STARTUP=$SCRIPT_DIR/install.sh

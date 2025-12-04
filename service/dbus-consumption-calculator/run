@@ -1,3 +1,5 @@
 #!/bin/sh
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+NEWPATH="$(dirname "$(dirname "$SCRIPT_DIR")")/dbus-consumption-calculator.py"
 exec 2>&1
-exec /data/dbus-huaweisun2000-pvinverter/dbus-consumption-calculator.py
+exec python -u $NEWPATH
