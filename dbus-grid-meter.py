@@ -222,6 +222,14 @@ class DbusGridMeterService:
                     logging.debug(f"set {grid_path} to {value}")
                     s[grid_path] = value
 
+                # If L1/Power is missing but we have total power, use total power for L1
+                # (Huawei meter reports INT32_MAX for L1/L2/L3 power, but has valid total power)
+                if '/Ac/L1/Power' not in meter_values or meter_values.get('/Ac/L1/Power', 0) == 0:
+                    if '/Ac/Power' in meter_values:
+                        total_power = meter_values['/Ac/Power']
+                        s['/Ac/L1/Power'] = total_power
+                        logging.debug(f"Calculated /Ac/L1/Power from total: {total_power}")
+
                 # Calculate total current and voltage (average of phases) only if we have valid data
                 l1_current = s['/Ac/L1/Current']
                 l2_current = s['/Ac/L2/Current']
