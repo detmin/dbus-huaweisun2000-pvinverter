@@ -61,12 +61,13 @@ class ConsumptionCalculator:
         self._dbusservice.register()
 
         # Setup DBus imports to read from other services
+        # Use createsignal=True to subscribe to value changes for automatic updates
         dbusconn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
 
-        self._grid_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/Power')
-        self._grid_l1_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/L1/Power')
-        self._pv_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/Power')
-        self._pv_l1_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/L1/Power')
+        self._grid_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/Power', createsignal=True)
+        self._grid_l1_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/L1/Power', createsignal=True)
+        self._pv_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/Power', createsignal=True)
+        self._pv_l1_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/L1/Power', createsignal=True)
 
         # Start update timer
         GLib.timeout_add(update_interval_ms, self._update)
