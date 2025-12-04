@@ -207,6 +207,12 @@ class DbusGridMeterService:
                     logging.debug(f"Skipping invalid power for {meter_path}: {value}")
 
                 if not skip:
+                    # Invert sign for power and current values to match Venus OS convention
+                    # Huawei: NEGATIVE = import, POSITIVE = export
+                    # Venus OS: POSITIVE = import, NEGATIVE = export
+                    if 'Power' in grid_path or 'Current' in grid_path:
+                        value = -value  # Invert the sign
+
                     meter_values[grid_path] = value
                     valid_count += 1
 
