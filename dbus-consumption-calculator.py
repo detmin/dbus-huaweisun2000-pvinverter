@@ -90,12 +90,17 @@ class ConsumptionCalculator:
             pv_power = self._pv_power.get_value()
             pv_l1_power = self._pv_l1_power.get_value()
 
+            # Log raw values for debugging
+            logging.debug(f"Raw values: grid_power={grid_power}, pv_power={pv_power}")
+
             # Default to 0 if values not available
             if grid_power is None:
+                logging.warning(f"Grid power is None, defaulting to 0")
                 grid_power = 0
             if grid_l1_power is None:
                 grid_l1_power = 0
             if pv_power is None:
+                logging.warning(f"PV power is None, defaulting to 0")
                 pv_power = 0
             if pv_l1_power is None:
                 pv_l1_power = 0
