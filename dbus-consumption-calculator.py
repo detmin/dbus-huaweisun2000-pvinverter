@@ -61,16 +61,18 @@ class ConsumptionCalculator:
         self._dbusservice.register()
 
         # Setup DBus imports to read from other services
-        # Use createsignal=True to subscribe to value changes for automatic updates
         dbusconn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
 
-        # createsignal=False does a direct GetValue() call on each get_value() request
-        # This ensures we always get current data regardless of signal timing.
-        # (The original blocking issue was Modbus inside DBus lock - that's now fixed)
-        self._grid_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/Power', createsignal=False)
-        self._grid_l1_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/L1/Power', createsignal=False)
-        self._pv_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/Power', createsignal=False)
-        self._pv_l1_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/L1/Power', createsignal=False)
+        # Use createsignal=True for signal-based updates, but do initial read to populate cache
+        self._grid_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/Power', createsignal=True)
+        self._grid_l1_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/L1/Power', createsignal=True)
+        self._pv_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/Power', createsignal=True)
+        self._pv_l1_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/L1/Power', createsignal=True)
+
+        # Force initial read to populate cache (wait for services to be ready)
+        import time
+        time.sleep(1)
+        logging.info(f"Initial values: Grid={self._grid_power.get_value()}, PV={self._pv_power.get_value()}")
 
         # Start update timer
         GLib.timeout_add(update_interval_ms, self._update)
