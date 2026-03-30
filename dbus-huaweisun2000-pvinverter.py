@@ -45,7 +45,7 @@ class DbusSun2000Service:
 
         # Create the mandatory objects
         self._dbusservice.add_path('/DeviceInstance', settings.get_vrm_instance())
-        self._dbusservice.add_path('/ProductId', 0)  # Huawei does not have a product id
+        self._dbusservice.add_path('/ProductId', 0xA140)  # Generic PV Inverter (required for Venus OS system calculator)
         self._dbusservice.add_path('/ProductName', productname)
         self._dbusservice.add_path('/DeviceName', productname)  # Alias for GUI compatibility
         self._dbusservice.add_path('/CustomName', settings.get("custom_name"))
