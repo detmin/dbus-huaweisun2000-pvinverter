@@ -64,10 +64,13 @@ class ConsumptionCalculator:
         # Use createsignal=True to subscribe to value changes for automatic updates
         dbusconn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
 
-        self._grid_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/Power', createsignal=True)
-        self._grid_l1_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/L1/Power', createsignal=True)
-        self._pv_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/Power', createsignal=True)
-        self._pv_l1_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/L1/Power', createsignal=True)
+        # createsignal=False does a direct GetValue() call on each get_value() request
+        # This ensures we always get current data regardless of signal timing.
+        # (The original blocking issue was Modbus inside DBus lock - that's now fixed)
+        self._grid_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/Power', createsignal=False)
+        self._grid_l1_power = VeDbusItemImport(dbusconn, grid_service, '/Ac/L1/Power', createsignal=False)
+        self._pv_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/Power', createsignal=False)
+        self._pv_l1_power = VeDbusItemImport(dbusconn, pv_service, '/Ac/L1/Power', createsignal=False)
 
         # Start update timer
         GLib.timeout_add(update_interval_ms, self._update)
