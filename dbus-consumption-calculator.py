@@ -107,30 +107,15 @@ class ConsumptionCalculator:
             if pv_l1_power is None:
                 pv_l1_power = 0
 
-            # Calculate consumption
-            # Grid meter service now uses standard Venus OS sign convention:
-            #   POSITIVE (+) = Import FROM grid (consuming, grid feeds home)
-            #   NEGATIVE (-) = Export TO grid (producing, home feeds grid)
+            # Publish ONLY grid power (not Grid + PV)
+            # Venus OS will add PV automatically: Consumption = PV + our_acload
+            # Result: PV + Grid = correct total consumption
             #
-            # Consumption calculation:
-            #   When IMPORTING (grid > 0): Consumption = Grid Import + PV Production
-            #     Example: Grid=+2300W (importing), PV=+400W → Consumption=2300+400=2700W
-            #
-            #   When EXPORTING (grid < 0): Consumption = PV Production + Grid (negative, so subtracts)
-            #     Example: Grid=-1715W (exporting), PV=+2417W → Consumption=2417+(-1715)=702W
-            #
-            # Note: The grid meter service inverts Huawei's sign convention to match Venus OS
+            # This compensates for Venus OS double-counting when Position=1
+            # (Venus OS calculates: PV on output + acload services)
 
-            if grid_power > 0:  # Importing from grid (positive value)
-                consumption_total = grid_power + pv_power
-                consumption_l1 = grid_l1_power + pv_l1_power
-            else:  # Exporting to grid (negative value)
-                consumption_total = pv_power + grid_power  # grid_power is negative
-                consumption_l1 = pv_l1_power + grid_l1_power
-
-            # Ensure consumption is never negative (safety check)
-            consumption_total = max(0, consumption_total)
-            consumption_l1 = max(0, consumption_l1)
+            consumption_total = grid_power
+            consumption_l1 = grid_l1_power
 
             # Update DBus
             with self._dbusservice as s:
@@ -139,7 +124,7 @@ class ConsumptionCalculator:
                 s['/Ac/L2/Power'] = 0  # Not used in single-phase
                 s['/Ac/L3/Power'] = 0  # Not used in single-phase
 
-            logging.debug(f"Grid: {grid_power}W, PV: {pv_power}W, Consumption: {consumption_total}W")
+            logging.debug(f"Grid: {grid_power}W, PV: {pv_power}W, Publishing (Grid only): {consumption_total}W, Venus will show: {consumption_total + pv_power}W")
 
         except Exception as e:
             logging.error(f"Error updating consumption: {e}")
